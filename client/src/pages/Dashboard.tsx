@@ -428,7 +428,7 @@ export default function Dashboard() {
             <TabsTrigger value="pending">AI Leads</TabsTrigger>
           </TabsList>
           <TabsContent value="companies" className="mt-6">
-            <CompaniesView searchTerm={searchTerm} filters={filters} />
+            <CompaniesView searchTerm={searchTerm} filters={filters} currentUserId={user?.id} />
           </TabsContent>
           <TabsContent value="contacts" className="mt-6">
             <ContactsView searchTerm={searchTerm} />

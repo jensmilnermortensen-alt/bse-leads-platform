@@ -104,6 +104,12 @@ export const appRouter = router({
         await db.deleteCompany(input.id);
         return { success: true };
       }),
+
+    assign: protectedProcedure
+      .input(z.object({ companyId: z.number(), assignedToId: z.number().nullable() }))
+      .mutation(async ({ input }) => {
+        return await db.assignCompany(input.companyId, input.assignedToId);
+      }),
   }),
 
   // ============================================================================
@@ -440,6 +446,15 @@ export const appRouter = router({
         }
         return { checked: subset.length, updatesFound: updates.length, saved };
       }),
+  }),
+
+  // ============================================================================
+  // USERS PROCEDURES
+  // ============================================================================
+  users: router({
+    list: protectedProcedure.query(async () => {
+      return await db.getUsers();
+    }),
   }),
 });
 

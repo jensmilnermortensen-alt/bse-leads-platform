@@ -1,6 +1,6 @@
 import { eq, like, and, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, companies, contacts, roles, qualifications, pendingLeads, Company, Contact, Role, Qualification, PendingLead, InsertPendingLead } from "../drizzle/schema";
+import { InsertUser, users, companies, contacts, roles, qualifications, pendingLeads, Company, Contact, Role, Qualification, PendingLead, InsertPendingLead, User } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -87,6 +87,23 @@ export async function getUserByOpenId(openId: string) {
   const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
 
   return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getUsers(): Promise<Pick<User, "id" | "name" | "email" | "role">[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select({ id: users.id, name: users.name, email: users.email, role: users.role }).from(users);
+}
+
+export async function assignCompany(companyId: number, assignedToId: number | null): Promise<Company> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(companies)
+    .set({ assignedToId: assignedToId ?? undefined, assignedAt: assignedToId ? new Date() : undefined })
+    .where(eq(companies.id, companyId));
+  const company = await getCompanyById(companyId);
+  if (!company) throw new Error("Company not found");
+  return company;
 }
 
 // ============================================================================

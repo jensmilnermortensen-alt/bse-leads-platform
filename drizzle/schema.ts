@@ -46,7 +46,11 @@ export const companies = mysqlTable("companies", {
   // Lead qualification
   leadStatus: mysqlEnum("leadStatus", ["New", "Contacted", "Qualified", "Disqualified"]).default("New"),
   leadNotes: text("leadNotes"),
-  
+
+  // Assignment
+  assignedToId: int("assignedToId"),
+  assignedAt: timestamp("assignedAt"),
+
   // Metadata
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
