@@ -1,6 +1,6 @@
-import { eq, like, and, or, inArray } from "drizzle-orm";
+import { eq, like, and, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, companies, contacts, roles, qualifications, Company, Contact, Role, Qualification } from "../drizzle/schema";
+import { InsertUser, users, companies, contacts, roles, qualifications, pendingLeads, Company, Contact, Role, Qualification, PendingLead, InsertPendingLead } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -325,9 +325,57 @@ export async function createQualification(data: any): Promise<Qualification> {
 export async function updateQualification(companyId: number, data: Partial<Qualification>): Promise<Qualification> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   await db.update(qualifications).set(data).where(eq(qualifications.companyId, companyId));
   const qualification = await getQualificationByCompanyId(companyId);
   if (!qualification) throw new Error("Failed to update qualification");
   return qualification;
+}
+
+// ============================================================================
+// PENDING LEADS QUERIES
+// ============================================================================
+
+export async function getPendingLeads(status?: "pending" | "approved" | "rejected"): Promise<PendingLead[]> {
+  const db = await getDb();
+  if (!db) return [];
+  if (status) {
+    return await db.select().from(pendingLeads).where(eq(pendingLeads.reviewStatus, status));
+  }
+  return await db.select().from(pendingLeads);
+}
+
+export async function getPendingLeadById(id: number): Promise<PendingLead | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(pendingLeads).where(eq(pendingLeads.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function createPendingLead(data: InsertPendingLead): Promise<PendingLead> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(pendingLeads).values(data);
+  const id = result[0].insertId;
+  const lead = await getPendingLeadById(id as number);
+  if (!lead) throw new Error("Failed to create pending lead");
+  return lead;
+}
+
+export async function updatePendingLeadStatus(
+  id: number,
+  status: "approved" | "rejected"
+): Promise<PendingLead> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(pendingLeads).set({ reviewStatus: status, reviewedAt: new Date() }).where(eq(pendingLeads.id, id));
+  const lead = await getPendingLeadById(id);
+  if (!lead) throw new Error("Failed to update pending lead");
+  return lead;
+}
+
+export async function deletePendingLead(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(pendingLeads).where(eq(pendingLeads.id, id));
 }

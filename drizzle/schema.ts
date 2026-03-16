@@ -141,3 +141,39 @@ export const qualifications = mysqlTable("qualifications", {
 
 export type Qualification = typeof qualifications.$inferSelect;
 export type InsertQualification = typeof qualifications.$inferInsert;
+
+/**
+ * Pending leads table - stores AI-discovered leads awaiting manual review
+ */
+export const pendingLeads = mysqlTable("pendingLeads", {
+  id: int("id").autoincrement().primaryKey(),
+
+  // Company info
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  website: varchar("website", { length: 255 }),
+  location: varchar("location", { length: 255 }),
+  country: varchar("country", { length: 100 }),
+  region: mysqlEnum("region", ["Denmark", "Germany", "Sweden", "Norway", "EMEA", "Other"]),
+  companySize: mysqlEnum("companySize", ["1-10", "11-50", "51-120", "121-500", "500+", "Unknown"]),
+  fundingStage: mysqlEnum("fundingStage", ["Pre-Seed", "Seed", "Series A", "Series B", "Series C+", "Growth", "Public", "Unknown"]),
+  industry: mysqlEnum("industry", ["Academia", "Agro/Foodtech", "Bio-industrial", "Biotech", "Health Tech", "Healthcare", "Medical Devices", "Pharmaceuticals", "VC/PE/Fund", "Other"]),
+  category: mysqlEnum("category", ["Biotech", "MedTech", "HealthTech", "Pharma", "Other"]),
+  totalFundingAmount: decimal("totalFundingAmount", { precision: 12, scale: 2 }),
+  latestFundingRound: varchar("latestFundingRound", { length: 100 }),
+
+  // Agent metadata
+  agentNotes: text("agentNotes"),   // Why the agent flagged this as a good lead
+  sources: text("sources"),         // JSON array of source URLs used
+  agentType: mysqlEnum("agentType", ["lead_finder", "data_refresh"]).default("lead_finder"),
+
+  // Review
+  reviewStatus: mysqlEnum("reviewStatus", ["pending", "approved", "rejected"]).default("pending"),
+  reviewedAt: timestamp("reviewedAt"),
+
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PendingLead = typeof pendingLeads.$inferSelect;
+export type InsertPendingLead = typeof pendingLeads.$inferInsert;

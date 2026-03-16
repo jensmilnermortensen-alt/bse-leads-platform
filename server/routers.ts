@@ -5,6 +5,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import { TRPCError } from "@trpc/server";
+import { runLeadFinderAgent, runDataRefreshAgent } from "./agent";
 
 export const appRouter = router({
   system: systemRouter,
@@ -318,6 +319,126 @@ export const appRouter = router({
             notes: updatedNotes,
           });
         }
+      }),
+  }),
+
+  // ============================================================================
+  // PENDING LEADS PROCEDURES
+  // ============================================================================
+  pendingLeads: router({
+    list: protectedProcedure
+      .input(z.object({ status: z.enum(["pending", "approved", "rejected"]).optional() }))
+      .query(async ({ input }) => {
+        return await db.getPendingLeads(input.status);
+      }),
+
+    approve: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        const lead = await db.getPendingLeadById(input.id);
+        if (!lead) throw new TRPCError({ code: "NOT_FOUND" });
+
+        // Promote to full company
+        await db.createCompany({
+          name: lead.name,
+          description: lead.description,
+          website: lead.website,
+          location: lead.location || "Unknown",
+          country: lead.country || "Unknown",
+          region: lead.region || "Other",
+          companySize: lead.companySize || "Unknown",
+          fundingStage: lead.fundingStage || "Unknown",
+          industry: lead.industry || "Other",
+          category: lead.category || "Other",
+          totalFundingAmount: lead.totalFundingAmount ? Number(lead.totalFundingAmount) : undefined,
+          latestFundingRound: lead.latestFundingRound,
+          leadStatus: "New",
+          leadNotes: lead.agentNotes,
+        });
+
+        return await db.updatePendingLeadStatus(input.id, "approved");
+      }),
+
+    reject: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        return await db.updatePendingLeadStatus(input.id, "rejected");
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.deletePendingLead(input.id);
+        return { success: true };
+      }),
+  }),
+
+  // ============================================================================
+  // AGENT PROCEDURES
+  // ============================================================================
+  agents: router({
+    runLeadFinder: protectedProcedure
+      .mutation(async () => {
+        const leads = await runLeadFinderAgent();
+        let saved = 0;
+        for (const lead of leads) {
+          try {
+            await db.createPendingLead({
+              name: lead.name,
+              description: lead.description,
+              website: lead.website,
+              location: lead.location,
+              country: lead.country,
+              region: lead.region,
+              companySize: lead.companySize,
+              fundingStage: lead.fundingStage,
+              industry: lead.industry,
+              category: lead.category,
+              totalFundingAmount: lead.totalFundingAmount?.toString(),
+              latestFundingRound: lead.latestFundingRound,
+              agentNotes: lead.agentNotes,
+              sources: lead.sources ? JSON.stringify(lead.sources) : null,
+              agentType: "lead_finder",
+            });
+            saved++;
+          } catch {
+            // skip duplicates or invalid entries
+          }
+        }
+        return { found: leads.length, saved };
+      }),
+
+    runDataRefresh: protectedProcedure
+      .mutation(async () => {
+        const allCompanies = await db.getAllCompanies();
+        const subset = allCompanies.slice(0, 20).map((c) => ({
+          id: c.id,
+          name: c.name,
+          website: c.website,
+          location: c.location,
+        }));
+
+        const updates = await runDataRefreshAgent(subset);
+        let saved = 0;
+        for (const update of updates) {
+          try {
+            await db.createPendingLead({
+              name: update.companyName,
+              agentNotes: `DATA REFRESH for company ID ${update.companyId}:\n${update.agentNotes}\n\nChanges found: ${JSON.stringify(update.changes, null, 2)}`,
+              sources: update.sources ? JSON.stringify(update.sources) : null,
+              agentType: "data_refresh",
+              location: "N/A",
+              country: "N/A",
+              fundingStage: "Unknown",
+              industry: "Other",
+              category: "Other",
+            });
+            saved++;
+          } catch {
+            // skip
+          }
+        }
+        return { checked: subset.length, updatesFound: updates.length, saved };
       }),
   }),
 });

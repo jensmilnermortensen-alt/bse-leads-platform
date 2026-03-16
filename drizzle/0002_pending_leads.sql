@@ -1,0 +1,23 @@
+CREATE TABLE `pendingLeads` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`name` varchar(255) NOT NULL,
+	`description` text,
+	`website` varchar(255),
+	`location` varchar(255),
+	`country` varchar(100),
+	`region` enum('Denmark','Germany','Sweden','Norway','EMEA','Other'),
+	`companySize` enum('1-10','11-50','51-120','121-500','500+','Unknown'),
+	`fundingStage` enum('Pre-Seed','Seed','Series A','Series B','Series C+','Growth','Public','Unknown'),
+	`industry` enum('Academia','Agro/Foodtech','Bio-industrial','Biotech','Health Tech','Healthcare','Medical Devices','Pharmaceuticals','VC/PE/Fund','Other'),
+	`category` enum('Biotech','MedTech','HealthTech','Pharma','Other'),
+	`totalFundingAmount` decimal(12,2),
+	`latestFundingRound` varchar(100),
+	`agentNotes` text,
+	`sources` text,
+	`agentType` enum('lead_finder','data_refresh') DEFAULT 'lead_finder',
+	`reviewStatus` enum('pending','approved','rejected') DEFAULT 'pending',
+	`reviewedAt` timestamp,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `pendingLeads_id` PRIMARY KEY(`id`)
+);

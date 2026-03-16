@@ -13,6 +13,7 @@ import { trpc } from "@/lib/trpc";
 import CompaniesView from "@/components/CompaniesView";
 import ContactsView from "@/components/ContactsView";
 import RolesView from "@/components/RolesView";
+import PendingLeadsView from "@/components/PendingLeadsView";
 
 const REGIONS = ["Denmark", "Germany", "Sweden", "Norway", "EMEA", "Other"] as const;
 const FUNDING_STAGES = ["Pre-Seed", "Seed", "Series A", "Series B", "Series C+", "Growth", "Public", "Unknown"] as const;
@@ -420,10 +421,11 @@ export default function Dashboard() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="companies">Companies</TabsTrigger>
             <TabsTrigger value="contacts">Contacts</TabsTrigger>
             <TabsTrigger value="roles">Open Roles</TabsTrigger>
+            <TabsTrigger value="pending">AI Leads</TabsTrigger>
           </TabsList>
           <TabsContent value="companies" className="mt-6">
             <CompaniesView searchTerm={searchTerm} filters={filters} />
@@ -433,6 +435,9 @@ export default function Dashboard() {
           </TabsContent>
           <TabsContent value="roles" className="mt-6">
             <RolesView searchTerm={searchTerm} filters={filters} />
+          </TabsContent>
+          <TabsContent value="pending" className="mt-6">
+            <PendingLeadsView />
           </TabsContent>
         </Tabs>
       </main>
