@@ -251,10 +251,19 @@ function CompanyDetailDialog({
   const { data: qualification } = trpc.qualifications.getByCompanyId.useQuery({ companyId });
 
   const updateStatusMutation = trpc.qualifications.updateStatus.useMutation({
+    onMutate: ({ status }) => {
+      setOptimisticStatus(status);
+      setStatusError(null);
+    },
     onSuccess: () => {
+      setOptimisticStatus(null);
       utils.qualifications.getByCompanyId.invalidate({ companyId });
       utils.companies.filter.invalidate();
       utils.companies.search.invalidate();
+    },
+    onError: (err) => {
+      setOptimisticStatus(null);
+      setStatusError(err.message || "Failed to update status. Please try again.");
     },
   });
   const addNotesMutation = trpc.qualifications.addNotes.useMutation({
@@ -276,6 +285,8 @@ function CompanyDetailDialog({
   });
 
   const [newNotes, setNewNotes] = useState("");
+  const [optimisticStatus, setOptimisticStatus] = useState<string | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
 
   if (isLoading) {
     return <div className="flex items-center justify-center py-8"><Loader2 className="w-6 h-6 animate-spin" /></div>;
@@ -345,12 +356,27 @@ function CompanyDetailDialog({
             <div>
               <label className="text-sm font-medium mb-2 block">Status</label>
               <div className="flex gap-2 flex-wrap">
-                {["New", "Contacted", "Qualified", "Disqualified"].map((status) => (
-                  <Button key={status} variant={qualification?.status === status ? "default" : "outline"} size="sm" onClick={() => updateStatusMutation.mutate({ companyId, status: status as any })} disabled={updateStatusMutation.isPending}>
-                    {status}
-                  </Button>
-                ))}
+                {["New", "Contacted", "Qualified", "Disqualified"].map((status) => {
+                  const activeStatus = optimisticStatus ?? qualification?.status;
+                  const isActive = activeStatus === status;
+                  const isThisLoading = updateStatusMutation.isPending && optimisticStatus === status;
+                  return (
+                    <Button
+                      key={status}
+                      variant={isActive ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => updateStatusMutation.mutate({ companyId, status: status as any })}
+                      disabled={updateStatusMutation.isPending}
+                    >
+                      {isThisLoading && <Loader2 className="w-3 h-3 animate-spin mr-1" />}
+                      {status}
+                    </Button>
+                  );
+                })}
               </div>
+              {statusError && (
+                <p className="text-xs text-red-500 mt-1">{statusError}</p>
+              )}
             </div>
             <div>
               <label className="text-sm font-medium mb-2 block">Notes</label>
