@@ -250,8 +250,16 @@ function CompanyDetailDialog({
   const { data: roles } = trpc.roles.getByCompanyId.useQuery({ companyId });
   const { data: qualification } = trpc.qualifications.getByCompanyId.useQuery({ companyId });
 
-  const updateStatusMutation = trpc.qualifications.updateStatus.useMutation();
-  const addNotesMutation = trpc.qualifications.addNotes.useMutation();
+  const updateStatusMutation = trpc.qualifications.updateStatus.useMutation({
+    onSuccess: () => {
+      utils.qualifications.getByCompanyId.invalidate({ companyId });
+      utils.companies.filter.invalidate();
+      utils.companies.search.invalidate();
+    },
+  });
+  const addNotesMutation = trpc.qualifications.addNotes.useMutation({
+    onSuccess: () => utils.qualifications.getByCompanyId.invalidate({ companyId }),
+  });
   const assignMutation = trpc.companies.assign.useMutation({
     onSuccess: () => {
       utils.companies.getById.invalidate({ id: companyId });

@@ -11,6 +11,7 @@ export default function PendingLeadsView() {
   const [agentStatus, setAgentStatus] = useState<string | null>(null);
   const [runningAgent, setRunningAgent] = useState<"finder" | "refresh" | null>(null);
 
+  const { data: isDemoMode } = trpc.agents.isDemoMode.useQuery();
   const { data: pending, isLoading } = trpc.pendingLeads.list.useQuery({ status: "pending" });
   const { data: approved } = trpc.pendingLeads.list.useQuery({ status: "approved" });
   const { data: rejected } = trpc.pendingLeads.list.useQuery({ status: "rejected" });
@@ -60,6 +61,16 @@ export default function PendingLeadsView() {
 
   return (
     <div className="space-y-6">
+      {/* Demo mode banner */}
+      {isDemoMode && (
+        <div className="bg-amber-50 border border-amber-200 rounded-md px-4 py-3 text-sm text-amber-800 flex items-start gap-2">
+          <Bot className="w-4 h-4 mt-0.5 shrink-0" />
+          <div>
+            <span className="font-semibold">Demo Mode</span> — No API key configured. The agents will run with realistic dummy data so you can preview the workflow. Add an <code className="bg-amber-100 px-1 rounded">ANTHROPIC_API_KEY</code> to enable live web search.
+          </div>
+        </div>
+      )}
+
       {/* Agent Controls */}
       <div className="flex gap-3 flex-wrap items-center">
         <Button

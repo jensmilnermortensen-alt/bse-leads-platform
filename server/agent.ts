@@ -1,6 +1,152 @@
 import Anthropic from "@anthropic-ai/sdk";
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const DEMO_MODE = !process.env.ANTHROPIC_API_KEY;
+const client = DEMO_MODE ? null : new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+// ============================================================================
+// DEMO DATA — shown when no API key is configured
+// ============================================================================
+
+const DEMO_LEADS: FoundLead[] = [
+  {
+    name: "Symphogen A/S",
+    description: "Danish antibody mixture company developing recombinant polyclonal antibodies for oncology and infectious disease.",
+    website: "https://www.symphogen.com",
+    location: "Lyngby, Denmark",
+    country: "Denmark",
+    region: "Denmark",
+    companySize: "51-120",
+    fundingStage: "Series B",
+    industry: "Biotech",
+    category: "Biotech",
+    totalFundingAmount: 142,
+    latestFundingRound: "Series B — EUR 85M, Jan 2025",
+    agentNotes: "Strong signal: Recently closed Series B and posted 12 open roles on LinkedIn including 2 senior clinical positions. Based in greater Copenhagen area. Fits BSE's core Biotech/Denmark criteria perfectly.",
+    sources: ["https://www.crunchbase.com/organization/symphogen", "https://www.linkedin.com/company/symphogen"],
+  },
+  {
+    name: "Novo Nordisk Foundation Center for Protein Research",
+    description: "Copenhagen-based research center focused on proteomics and systems biology with growing translational pipeline.",
+    website: "https://www.cpr.ku.dk",
+    location: "Copenhagen, Denmark",
+    country: "Denmark",
+    region: "Denmark",
+    companySize: "51-120",
+    fundingStage: "Seed",
+    industry: "Academia",
+    category: "Biotech",
+    totalFundingAmount: 28,
+    latestFundingRound: "Seed Grant — EUR 28M, Nov 2024",
+    agentNotes: "Expanding team significantly. 8 open research positions posted. Increasing industry collaboration signals potential for executive and specialist recruitment needs.",
+    sources: ["https://www.cpr.ku.dk", "https://www.linkedin.com/company/cpr-ku"],
+  },
+  {
+    name: "BioInnovation Institute",
+    description: "Copenhagen-based life science incubator spinning out biotech and medtech companies with active portfolio of 20+ startups.",
+    website: "https://bii.dk",
+    location: "Copenhagen, Denmark",
+    country: "Denmark",
+    region: "Denmark",
+    companySize: "11-50",
+    fundingStage: "Seed",
+    industry: "Biotech",
+    category: "Biotech",
+    totalFundingAmount: 45,
+    latestFundingRound: "Foundation Grant — EUR 45M, 2024",
+    agentNotes: "Portfolio companies collectively hiring across 30+ roles. Strong network contact for BSE — one introduction could unlock multiple placement opportunities.",
+    sources: ["https://bii.dk", "https://www.dealroom.co/companies/bioinnovation-institute"],
+  },
+  {
+    name: "Hemab Therapeutics",
+    description: "Clinical-stage biotech developing next-generation therapies for rare bleeding and thrombotic disorders.",
+    website: "https://www.hemab.com",
+    location: "Copenhagen, Denmark",
+    country: "Denmark",
+    region: "Denmark",
+    companySize: "11-50",
+    fundingStage: "Series A",
+    industry: "Biotech",
+    category: "Pharma",
+    totalFundingAmount: 95,
+    latestFundingRound: "Series A — USD 95M, Oct 2024",
+    agentNotes: "Just raised large Series A, entering rapid scale-up phase. Actively recruiting across clinical development and medical affairs. High-quality lead.",
+    sources: ["https://www.crunchbase.com/organization/hemab", "https://www.fiercebiotech.com/biotech/hemab-therapeutics"],
+  },
+  {
+    name: "Cortendo AB",
+    description: "Swedish specialty pharma company focused on endocrinology and rare endocrine disorders.",
+    website: "https://www.cortendo.com",
+    location: "Gothenburg, Sweden",
+    country: "Sweden",
+    region: "Sweden",
+    companySize: "11-50",
+    fundingStage: "Series B",
+    industry: "Pharmaceuticals",
+    category: "Pharma",
+    totalFundingAmount: 67,
+    latestFundingRound: "Series B — EUR 67M, Dec 2024",
+    agentNotes: "Post-Series B scale-up underway. 6 open roles including VP Commercial and Senior Medical Director. Swedish HQ with EU expansion plans.",
+    sources: ["https://www.crunchbase.com/organization/cortendo", "https://www.linkedin.com/company/cortendo"],
+  },
+  {
+    name: "Unilabs Group",
+    description: "European diagnostic services company with strong Scandinavian presence expanding molecular diagnostics division.",
+    website: "https://www.unilabs.com",
+    location: "Oslo, Norway",
+    country: "Norway",
+    region: "Norway",
+    companySize: "121-500",
+    fundingStage: "Growth",
+    industry: "Health Tech",
+    category: "HealthTech",
+    totalFundingAmount: 210,
+    latestFundingRound: "Growth — EUR 210M, 2024",
+    agentNotes: "Major Norway-based diagnostics expansion. Recently acquired two smaller labs and is actively hiring laboratory managers, pathologists, and commercial directors.",
+    sources: ["https://www.unilabs.com", "https://www.dealroom.co/companies/unilabs"],
+  },
+  {
+    name: "Enochian Biosciences",
+    description: "Clinical-stage gene therapy company targeting HIV and hepatitis B with novel AAV-based platforms.",
+    website: "https://www.enochian.com",
+    location: "Berlin, Germany",
+    country: "Germany",
+    region: "Germany",
+    companySize: "11-50",
+    fundingStage: "Series A",
+    industry: "Biotech",
+    category: "Biotech",
+    totalFundingAmount: 55,
+    latestFundingRound: "Series A — EUR 55M, Feb 2025",
+    agentNotes: "Fresh Series A from German government-backed fund. Building out Berlin R&D hub. Seeking 4 senior scientists and a Head of Clinical Operations.",
+    sources: ["https://www.crunchbase.com/organization/enochian", "https://www.medcitynews.com"],
+  },
+  {
+    name: "Sifco MedTech",
+    description: "Danish MedTech startup developing AI-assisted surgical planning software for orthopedic procedures.",
+    website: "https://www.sifcomedtech.com",
+    location: "Aarhus, Denmark",
+    country: "Denmark",
+    region: "Denmark",
+    companySize: "1-10",
+    fundingStage: "Seed",
+    industry: "Medical Devices",
+    category: "MedTech",
+    totalFundingAmount: 4.5,
+    latestFundingRound: "Seed — EUR 4.5M, Mar 2025",
+    agentNotes: "Early stage but high momentum. Fresh seed round. Looking for their first commercial hire and a CTO. Founder has strong network in Danish MedTech ecosystem.",
+    sources: ["https://www.medwatch.dk", "https://bii.dk/portfolio"],
+  },
+];
+
+const DEMO_REFRESH_UPDATES: RefreshUpdate[] = [
+  {
+    companyId: 0,
+    companyName: "DEMO: Example Company",
+    changes: { fundingStage: "Series B", companySize: "51-120" },
+    agentNotes: "DEMO: Updated from Series A to Series B after closing EUR 45M round in Feb 2025. Headcount grew from 35 to 68 per LinkedIn. Source: Crunchbase + LinkedIn.",
+    sources: ["https://www.crunchbase.com", "https://www.linkedin.com"],
+  },
+];
 
 export interface FoundLead {
   name: string;
@@ -146,6 +292,12 @@ function extractJSON(text: string): any[] {
 }
 
 export async function runLeadFinderAgent(): Promise<FoundLead[]> {
+  if (DEMO_MODE) {
+    // Simulate a short delay so the UI feels like work is happening
+    await new Promise((r) => setTimeout(r, 1500));
+    return DEMO_LEADS;
+  }
+
   const userMessage = `Search for new life science companies that match BSE's target criteria.
 Find at least 10 promising leads. Focus especially on:
 1. Danish companies that raised Seed/Series A/B in the last 12 months
@@ -161,6 +313,17 @@ Return results as a JSON array.`;
 export async function runDataRefreshAgent(
   companies: { id: number; name: string; website?: string | null; location?: string | null }[]
 ): Promise<RefreshUpdate[]> {
+  if (DEMO_MODE) {
+    await new Promise((r) => setTimeout(r, 1200));
+    return companies.slice(0, 1).map((c) => ({
+      companyId: c.id,
+      companyName: c.name,
+      changes: { companySize: "51-120" as const, fundingStage: "Series B" as const },
+      agentNotes: `DEMO MODE: Found updated information for ${c.name}. LinkedIn shows headcount grew to 51-120 range. Crunchbase indicates a new funding round closed. In live mode, the agent would search the web for real-time data.`,
+      sources: ["https://www.crunchbase.com", "https://www.linkedin.com"],
+    }));
+  }
+
   if (companies.length === 0) return [];
 
   const companyList = companies

@@ -383,6 +383,8 @@ export const appRouter = router({
   // AGENT PROCEDURES
   // ============================================================================
   agents: router({
+    isDemoMode: protectedProcedure.query(() => !process.env.ANTHROPIC_API_KEY),
+
     runLeadFinder: protectedProcedure
       .mutation(async () => {
         const leads = await runLeadFinderAgent();

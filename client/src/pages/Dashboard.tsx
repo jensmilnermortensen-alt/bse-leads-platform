@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -239,12 +240,15 @@ export default function Dashboard() {
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle>BSE Leads Platform</CardTitle>
-            <CardDescription>Please log in to access the leads dashboard</CardDescription>
+            <CardDescription>Life Science Recruitment Lead Management</CardDescription>
           </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
               This platform helps you manage and qualify life science leads across the EMEA region.
             </p>
+            <Button className="w-full" onClick={() => { window.location.href = getLoginUrl(); }}>
+              Log in
+            </Button>
           </CardContent>
         </Card>
       </div>
