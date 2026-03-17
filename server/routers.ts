@@ -6,6 +6,7 @@ import { z } from "zod";
 import * as db from "./db";
 import { TRPCError } from "@trpc/server";
 import { runLeadFinderAgent, runDataRefreshAgent } from "./agent";
+import { enrichContact, isFullEnrichDemoMode } from "./fullenrich";
 
 export const appRouter = router({
   system: systemRouter,
@@ -178,6 +179,32 @@ export const appRouter = router({
         await db.deleteContact(input.id);
         return { success: true };
       }),
+
+    enrich: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        const contact = await db.getContactById(input.id);
+        if (!contact) throw new TRPCError({ code: "NOT_FOUND" });
+
+        const company = await db.getCompanyById(contact.companyId);
+
+        const result = await enrichContact({
+          firstName: contact.firstName,
+          lastName: contact.lastName,
+          linkedinUrl: contact.linkedinUrl,
+          companyName: company?.name,
+        });
+
+        // Only fill in fields that are currently empty
+        const updates: Record<string, unknown> = { enrichedAt: result.enrichedAt };
+        if (result.email && !contact.email) updates.email = result.email;
+        if (result.phone && !contact.phone) updates.phone = result.phone;
+
+        await db.updateContact(input.id, updates as any);
+        return { ...result, contactId: input.id };
+      }),
+
+    isEnrichDemoMode: publicProcedure.query(() => isFullEnrichDemoMode()),
   }),
 
   // ============================================================================

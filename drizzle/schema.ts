@@ -79,6 +79,9 @@ export const contacts = mysqlTable("contacts", {
   decisionMaker: boolean("decisionMaker").default(false),
   hiringResponsible: boolean("hiringResponsible").default(false),
   
+  // Enrichment
+  enrichedAt: timestamp("enrichedAt"),
+
   // Metadata
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
