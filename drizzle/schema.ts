@@ -51,6 +51,10 @@ export const companies = mysqlTable("companies", {
   assignedToId: int("assignedToId"),
   assignedAt: timestamp("assignedAt"),
 
+  // Bullhorn CRM sync
+  bullhornId: varchar("bullhornId", { length: 50 }),
+  bullhornSyncedAt: timestamp("bullhornSyncedAt"),
+
   // Metadata
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -81,6 +85,10 @@ export const contacts = mysqlTable("contacts", {
   
   // Enrichment
   enrichedAt: timestamp("enrichedAt"),
+
+  // Bullhorn CRM sync
+  bullhornId: varchar("bullhornId", { length: 50 }),
+  bullhornSyncedAt: timestamp("bullhornSyncedAt"),
 
   // Metadata
   createdAt: timestamp("createdAt").defaultNow().notNull(),

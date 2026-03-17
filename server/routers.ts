@@ -7,6 +7,7 @@ import * as db from "./db";
 import { TRPCError } from "@trpc/server";
 import { runLeadFinderAgent, runDataRefreshAgent } from "./agent";
 import { enrichContact, isFullEnrichDemoMode } from "./fullenrich";
+import { syncCompanyToBullhorn, syncContactToBullhorn, isBullhornDemoMode } from "./bullhorn";
 
 export const appRouter = router({
   system: systemRouter,
@@ -111,6 +112,20 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         return await db.assignCompany(input.companyId, input.assignedToId);
       }),
+
+    syncToBullhorn: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        const company = await db.getCompanyById(input.id);
+        if (!company) throw new TRPCError({ code: "NOT_FOUND" });
+
+        const result = await syncCompanyToBullhorn(company);
+        await db.updateCompany(input.id, {
+          bullhornId: result.bullhornId,
+          bullhornSyncedAt: new Date(),
+        } as any);
+        return result;
+      }),
   }),
 
   // ============================================================================
@@ -205,6 +220,28 @@ export const appRouter = router({
       }),
 
     isEnrichDemoMode: publicProcedure.query(() => isFullEnrichDemoMode()),
+
+    syncToBullhorn: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        const contact = await db.getContactById(input.id);
+        if (!contact) throw new TRPCError({ code: "NOT_FOUND" });
+
+        const company = await db.getCompanyById(contact.companyId);
+        if (!company?.bullhornId) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "Sync the company to Bullhorn first before syncing this contact.",
+          });
+        }
+
+        const result = await syncContactToBullhorn(contact, company.bullhornId);
+        await db.updateContact(input.id, {
+          bullhornId: result.bullhornId,
+          bullhornSyncedAt: new Date(),
+        } as any);
+        return result;
+      }),
   }),
 
   // ============================================================================
@@ -484,6 +521,13 @@ export const appRouter = router({
     list: protectedProcedure.query(async () => {
       return await db.getUsers();
     }),
+  }),
+
+  // ============================================================================
+  // BULLHORN PROCEDURES
+  // ============================================================================
+  bullhorn: router({
+    isDemoMode: publicProcedure.query(() => isBullhornDemoMode()),
   }),
 });
 

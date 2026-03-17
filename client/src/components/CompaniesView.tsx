@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ChevronRight, Loader2, UserPlus, User } from "lucide-react";
+import { ChevronRight, Loader2, UserPlus, CheckCircle2 } from "lucide-react";
 
 interface CompaniesViewProps {
   searchTerm: string;
@@ -260,6 +260,13 @@ function CompanyDetailDialog({
   const addNotesMutation = trpc.qualifications.addNotes.useMutation({
     onSuccess: () => utils.qualifications.getByCompanyId.invalidate({ companyId }),
   });
+  const syncBullhornMutation = trpc.companies.syncToBullhorn.useMutation({
+    onSuccess: () => {
+      utils.companies.getById.invalidate({ id: companyId });
+      utils.companies.filter.invalidate();
+      utils.companies.search.invalidate();
+    },
+  });
   const assignMutation = trpc.companies.assign.useMutation({
     onSuccess: () => {
       utils.companies.getById.invalidate({ id: companyId });
@@ -356,6 +363,36 @@ function CompanyDetailDialog({
               </div>
             </div>
           </div>
+        </div>
+
+        <div className="border-t pt-4">
+          <h4 className="font-semibold mb-3">Bullhorn CRM</h4>
+          {company.bullhornId ? (
+            <div className="flex items-center gap-2">
+              <Badge className="bg-green-100 text-green-800 border-green-200 gap-1">
+                <CheckCircle2 className="w-3 h-3" /> In Bullhorn: {company.bullhornId}
+              </Badge>
+              <span className="text-xs text-muted-foreground">
+                Synced {company.bullhornSyncedAt ? new Date(company.bullhornSyncedAt).toLocaleDateString() : ""}
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => syncBullhornMutation.mutate({ id: companyId })}
+                disabled={syncBullhornMutation.isPending}
+                className="gap-1"
+              >
+                {syncBullhornMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                Sync to Bullhorn
+              </Button>
+              {syncBullhornMutation.isError && (
+                <span className="text-xs text-red-500">{syncBullhornMutation.error.message}</span>
+              )}
+            </div>
+          )}
         </div>
 
         {contacts && contacts.length > 0 && (
