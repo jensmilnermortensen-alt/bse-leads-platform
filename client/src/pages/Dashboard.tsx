@@ -271,7 +271,12 @@ export default function Dashboard() {
               <p className="text-sm font-medium">{user?.name}</p>
               <p className="text-xs text-muted-foreground">{user?.email}</p>
             </div>
-            <Button variant="outline" size="sm" onClick={logout} className="gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => { await logout(); window.location.href = "/"; }}
+              className="gap-2"
+            >
               <LogOut className="w-4 h-4" />
               Logout
             </Button>
